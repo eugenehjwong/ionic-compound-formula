@@ -1,1 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ionic Compounds & Ions Practice</title>
+<style>
+  body { font-family: Arial, sans-serif; background:white; color:black; margin:20px; }
+  h1 { text-align:center; }
+  .controls { margin:15px 0; text-align:center; }
+  button { padding:6px 12px; margin:2px; }
+  select, input[type=text] { padding:6px; }
+  #question { font-size:1.3em; margin:15px 0; text-align:center; }
+  #answerInput { font-size:1.2em; }
+  #resultBox { margin-top:20px; text-align:center; font-weight:bold; }
+  .builder { margin-top:10px; text-align:center; }
+  .builder button { width:32px; }
+</style>
+</head>
+<body>
+<h1>Ionic Compounds & Ions Practice</h1>
 
+<div class="controls">
+  <label for="mode">Choose mode:</label>
+  <select id="mode">
+    <option value="compound">Compounds</option>
+    <option value="ion">Ions</option>
+    <option value="both">Both</option>
+  </select>
+  <button id="newQ">New Question</button>
+</div>
+
+<div id="question"></div>
+
+<div class="controls">
+  <input type="text" id="answerInput" placeholder="Type your answer here">
+  <button id="checkAns">Check Answer</button>
+  <button id="showAns">Show Answer</button>
+</div>
+
+<div class="builder">
+  <div>
+    Subscripts:
+    <button onclick="insertAtCursor('₁')">₁</button>
+    <button onclick="insertAtCursor('₂')">₂</button>
+    <button onclick="insertAtCursor('₃')">₃</button>
+    <button onclick="insertAtCursor('₄')">₄</button>
+    <button onclick="insertAtCursor('₅')">₅</button>
+  </div>
+  <div>
+    Charges:
+    <button onclick="insertAtCursor('⁺')">⁺</button>
+    <button onclick="insertAtCursor('²⁺')">²⁺</button>
+    <button onclick="insertAtCursor('³⁺')">³⁺</button>
+    <button onclick="insertAtCursor('⁻')">⁻</button>
+    <button onclick="insertAtCursor('²⁻')">²⁻</button>
+    <button onclick="insertAtCursor('³⁻')">³⁻</button>
+  </div>
+</div>
+
+<div id="resultBox" style="display:none;">
+  <p id="resultText"></p>
+</div>
+
+<script>
+// -------------------- Data --------------------
+const compounds = [
+  {name:"sodium chloride", formula:"NaCl"},
+  {name:"magnesium oxide", formula:"MgO"},
+  {name:"aluminium sulfate", formula:"Al₂(SO₄)₃"},
+  {name:"calcium hydroxide", formula:"Ca(OH)₂"},
+  {name:"ammonium nitrate", formula:"NH₄NO₃"},
+  {name:"copper(II) sulfate", formula:"CuSO₄"},
+  {name:"iron(III) chloride", formula:"FeCl₃"}
+];
+
+const ions = [
+  {name:"sodium ion", formula:"Na⁺"},
+  {name:"magnesium ion", formula:"Mg²⁺"},
+  {name:"aluminium ion", formula:"Al³⁺"},
+  {name:"chloride ion", formula:"Cl⁻"},
+  {name:"oxide ion", formula:"O²⁻"},
+  {name:"sulfide ion", formula:"S²⁻"},
+  {name:"nitrate ion", formula:"NO₃⁻"},
+  {name:"sulfate ion", formula:"SO₄²⁻"},
+  {name:"carbonate ion", formula:"CO₃²⁻"},
+  {name:"hydroxide ion", formula:"OH⁻"},
+  {name:"ammonium ion", formula:"NH₄⁺"},
+  {name:"phosphate ion", formula:"PO₄³⁻"},
+  {name:"copper(II) ion", formula:"Cu²⁺"},
+  {name:"iron(III) ion", formula:"Fe³⁺"}
+];
+
+// -------------------- Helpers --------------------
+
+// Correct formatting of subscripts & superscripts
+function formatFormula(str){
+  // Step 1: charges (digits followed by + or -, or standalone + / -)
+  str = str.replace(/(\d*[+-])/g,"<sup>$1</sup>");
+  // Step 2: digits after letters or ) → subscript
+  str = str.replace(/([A-Za-z)])(\d+)/g,"$1<sub>$2</sub>");
+  return str;
+}
+
+// Normalize input for comparison
+function normalize(str){
+  return str
+    .replace(/<sub>(.*?)<\/sub>/g,"$1")
+    .replace(/<sup>(.*?)<\/sup>/g,"$1")
+    .replace(/₀/g,"0").replace(/₁/g,"1").replace(/₂/g,"2").replace(/₃/g,"3")
+    .replace(/₄/g,"4").replace(/₅/g,"5").replace(/₆/g,"6").replace(/₇/g,"7")
+    .replace(/₈/g,"8").replace(/₉/g,"9")
+    .replace(/⁰/g,"0").replace(/¹/g,"1").replace(/²/g,"2").replace(/³/g,"3")
+    .replace(/⁴/g,"4").replace(/⁵/g,"5").replace(/⁶/g,"6").replace(/⁷/g,"7")
+    .replace(/⁸/g,"8").replace(/⁹/g,"9")
+    .replace(/⁺/g,"+").replace(/⁻/g,"-")
+    .replace(/\s+/g,"").trim();
+}
+
+// Insert builder characters
+function insertAtCursor(txt){
+  const input=document.getElementById("answerInput");
+  const start=input.selectionStart;
+  const end=input.selectionEnd;
+  input.value=input.value.substring(0,start)+txt+input.value.substring(end);
+  input.focus();
+  input.selectionStart=input.selectionEnd=start+txt.length;
+}
+
+// -------------------- Question Generator --------------------
+let current=null;
+
+function newQuestion(){
+  const mode=document.getElementById("mode").value;
+  let pool=[];
+  if(mode==="compound") pool=compounds;
+  else if(mode==="ion") pool=ions;
+  else pool=compounds.concat(ions);
+
+  const item=pool[Math.floor(Math.random()*pool.length)];
+  const askFormula=Math.random()<0.5;
+  current={};
+
+  if(askFormula){
+    current.type="formula";
+    current.answer=item.formula;
+    document.getElementById("question").innerHTML=`Give the formula for: <b>${item.name}</b>`;
+  } else {
+    current.type="name";
+    current.answer=item.name;
+    document.getElementById("question").innerHTML=`Give the name of: <b>${formatFormula(item.formula)}</b>`;
+  }
+  document.getElementById("answerInput").value="";
+  document.getElementById("resultBox").style.display="none";
+}
+
+// -------------------- Answer Checking --------------------
+document.getElementById("checkAns").addEventListener("click",()=>{
+  if(!current) return;
+  const u=document.getElementById("answerInput").value.trim();
+  const resultBox=document.getElementById("resultBox");
+  const resultText=document.getElementById("resultText");
+
+  if(current.type==="formula"){
+    resultText.innerHTML=(normalize(u)===normalize(current.answer)) ?
+      "✅ Correct!" : `❌ Incorrect. Correct answer: ${formatFormula(current.answer)}`;
+  } else {
+    resultText.innerHTML=(u.toLowerCase()===current.answer.toLowerCase()) ?
+      "✅ Correct!" : `❌ Incorrect. Correct answer: ${current.answer}`;
+  }
+  resultBox.style.display="block";
+});
+
+document.getElementById("showAns").addEventListener("click",()=>{
+  if(!current) return;
+  const resultBox=document.getElementById("resultBox");
+  const resultText=document.getElementById("resultText");
+  resultText.innerHTML=(current.type==="formula") ?
+    `Answer: ${formatFormula(current.answer)}` : `Answer: ${current.answer}`;
+  resultBox.style.display="block";
+});
+
+document.getElementById("newQ").addEventListener("click",newQuestion);
+</script>
+</body>
+</html>
